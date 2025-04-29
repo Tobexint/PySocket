@@ -1,0 +1,132 @@
+DEBUG: 2025-03-31 19:41:58.537711 - Sending query: 'line1' to 127.0.0.1:12345
+DEBUG: 2025-03-31 19:41:58.537711 - Received response: 'STRING NOT FOUND' in 0.000000 seconds
+Query: 'line1' - Response: STRING NOT FOUND
+
+DEBUG: 2025-03-31 19:41:58.537711 - Sending query: 'line2' to 127.0.0.1:12345
+DEBUG: 2025-03-31 19:41:58.537711 - Received response: 'STRING NOT FOUND' in 0.000000 seconds
+Query: 'line2' - Response: STRING NOT FOUND
+
+DEBUG: 2025-03-31 19:41:58.537711 - Sending query: 'exactmatch' to 127.0.0.1:12345
+DEBUG: 2025-03-31 19:41:58.537711 - Received response: 'STRING NOT FOUND' in 0.000000 seconds
+Query: 'exactmatch' - Response: STRING NOT FOUND
+
+DEBUG: 2025-03-31 19:41:58.537711 - Sending query: '+279;' to 127.0.0.1:12345
+DEBUG: 2025-03-31 19:41:58.537711 - Received response: 'STRING EXISTS' in 0.000000 seconds
+Query: '+279;' - Response: STRING EXISTS
+
+DEBUG: 2025-03-31 19:41:58.537711 - Sending query: 'nonexistent' to 127.0.0.1:12345
+DEBUG: 2025-03-31 19:41:58.537711 - Received response: 'STRING NOT FOUND' in 0.000000 seconds
+Query: 'nonexistent' - Response: STRING NOT FOUND
+
+DEBUG: 2025-03-31 19:41:58.537711 - Sending query: '7;0;6;28;0;9;4;0;' to 127.0.0.1:12345
+DEBUG: 2025-03-31 19:41:58.537711 - Received response: 'STRING EXISTS' in 0.000000 seconds
+Query: '7;0;6;28;0;9;4;0;' - Response: STRING EXISTS
+
+DEBUG: 2025-03-31 19:41:58.537711 - Sending query: '7;0;6;28' to 127.0.0.1:12345
+DEBUG: 2025-03-31 19:41:58.537711 - Received response: 'STRING NOT FOUND' in 0.000000 seconds
+Query: '7;0;6;28' - Response: STRING NOT FOUND
+
+DEBUG: 2025-03-31 19:41:58.537711 - Sending query: '300000;' to 127.0.0.1:12345
+DEBUG: 2025-03-31 19:41:58.537711 - Received response: 'STRING EXISTS' in 0.000000 seconds
+Query: '300000;' - Response: STRING EXISTS
+
+DEBUG: 2025-03-31 19:41:58.537711 - Sending query: 'Tobenna;' to 127.0.0.1:12345
+DEBUG: 2025-03-31 19:41:58.537711 - Received response: 'STRING EXISTS' in 0.000000 seconds
+Query: 'Tobenna;' - Response: STRING EXISTS
+
+DEBUG: 2025-03-31 19:41:58.537711 - Sending query: 'Iloabuchi;' to 127.0.0.1:12345
+DEBUG: 2025-03-31 19:41:58.537711 - Received response: 'STRING EXISTS' in 0.000000 seconds
+Query: 'Iloabuchi;' - Response: STRING EXISTS
+
+DEBUG: 2025-03-31 19:41:58.537711 - Sending query: 'Ilo;' to 127.0.0.1:12345
+DEBUG: 2025-03-31 19:41:58.537711 - Received response: 'STRING EXISTS' in 0.000000 seconds
+Query: 'Ilo;' - Response: STRING EXISTS
+
+DEBUG: 2025-03-31 19:41:58.537711 - Sending query: 'TBAG' to 127.0.0.1:12345
+DEBUG: 2025-03-31 19:41:58.537711 - Received response: 'STRING EXISTS' in 0.000000 seconds
+Query: 'TBAG' - Response: STRING EXISTS
+
+DEBUG: 2025-03-31 19:41:58.537711 - Sending query: 'line3' to 127.0.0.1:12345
+DEBUG: 2025-03-31 19:41:58.537711 - Received response: 'STRING NOT FOUND' in 0.000000 seconds
+Query: 'line3' - Response: STRING NOT FOUND
+
+DEBUG: 2025-03-31 19:41:58.537711 - Sending query: '22245;' to 127.0.0.1:12345
+DEBUG: 2025-03-31 19:41:58.537711 - Received response: 'STRING EXISTS' in 0.000000 seconds
+Query: '22245;' - Response: STRING EXISTS
+
+DEBUG: 2025-03-31 19:41:58.537711 - Sending query: '278;' to 127.0.0.1:12345
+DEBUG: 2025-03-31 19:41:58.553335 - Received response: 'STRING EXISTS' in 0.015624 seconds
+Query: '278;' - Response: STRING EXISTS
+
+DEBUG: 2025-03-31 19:41:58.553335 - Sending query: '279;' to 127.0.0.1:12345
+DEBUG: 2025-03-31 19:41:58.553335 - Received response: 'STRING EXISTS' in 0.000000 seconds
+Query: '279;' - Response: STRING EXISTS
+
+DEBUG: 2025-03-31 19:41:58.553335 - Sending query: '28794137;' to 127.0.0.1:12345
+DEBUG: 2025-03-31 19:41:58.553335 - Received response: 'STRING EXISTS' in 0.000000 seconds
+Query: '28794137;' - Response: STRING EXISTS
+
+DEBUG: 2025-03-31 19:41:58.553335 - Sending query: '+233;' to 127.0.0.1:12345
+DEBUG: 2025-03-31 19:41:58.553335 - Received response: 'STRING EXISTS' in 0.000000 seconds
+Query: '+233;' - Response: STRING EXISTS
+
+DEBUG: 2025-03-31 19:41:58.553335 - Sending query: '12;0;6;21;0;17;4;0;' to 127.0.0.1:12345
+DEBUG: 2025-03-31 19:41:58.553335 - Received response: 'STRING EXISTS' in 0.000000 seconds
+Query: '12;0;6;21;0;17;4;0;' - Response: STRING EXISTS
+
+DEBUG: 2025-03-31 19:41:58.553335 - Sending query: '23;0;6;26;0;10;3;0;' to 127.0.0.1:12345
+DEBUG: 2025-03-31 19:41:58.553335 - Received response: 'STRING EXISTS' in 0.000000 seconds
+Query: '23;0;6;26;0;10;3;0;' - Response: STRING EXISTS
+
+DEBUG: 2025-03-31 19:41:58.553335 - Sending query: '13;0;23;28;0;19;3;0;' to 127.0.0.1:12345
+DEBUG: 2025-03-31 19:41:58.553335 - Received response: 'STRING EXISTS' in 0.000000 seconds
+Query: '13;0;23;28;0;19;3;0;' - Response: STRING EXISTS
+
+DEBUG: 2025-03-31 19:41:58.553335 - Sending query: 'TOBEX' to 127.0.0.1:12345
+DEBUG: 2025-03-31 19:41:58.553335 - Received response: 'STRING EXISTS' in 0.000000 seconds
+Query: 'TOBEX' - Response: STRING EXISTS
+
+DEBUG: 2025-03-31 19:41:58.553335 - Sending query: 'tti' to 127.0.0.1:12345
+DEBUG: 2025-03-31 19:41:58.553335 - Received response: 'STRING EXISTS' in 0.000000 seconds
+Query: 'tti' - Response: STRING EXISTS
+
+DEBUG: 2025-03-31 19:41:58.553335 - Sending query: 'TIT' to 127.0.0.1:12345
+DEBUG: 2025-03-31 19:41:58.553335 - Received response: 'STRING EXISTS' in 0.000000 seconds
+Query: 'TIT' - Response: STRING EXISTS
+
+DEBUG: 2025-03-31 19:41:58.553335 - Sending query: 'tobexint' to 127.0.0.1:12345
+DEBUG: 2025-03-31 19:41:58.553335 - Received response: 'STRING EXISTS' in 0.000000 seconds
+Query: 'tobexint' - Response: STRING EXISTS
+
+DEBUG: 2025-03-31 19:41:58.553335 - Sending query: 'norse' to 127.0.0.1:12345
+DEBUG: 2025-03-31 19:41:58.553335 - Received response: 'STRING EXISTS' in 0.000000 seconds
+Query: 'norse' - Response: STRING EXISTS
+
+DEBUG: 2025-03-31 19:41:58.553335 - Sending query: 'algae' to 127.0.0.1:12345
+DEBUG: 2025-03-31 19:41:58.553335 - Received response: 'STRING NOT FOUND' in 0.000000 seconds
+Query: 'algae' - Response: STRING NOT FOUND
+
+DEBUG: 2025-03-31 19:41:58.553335 - Sending query: 'ZINC' to 127.0.0.1:12345
+DEBUG: 2025-03-31 19:41:58.553335 - Received response: 'STRING EXISTS' in 0.000000 seconds
+Query: 'ZINC' - Response: STRING EXISTS
+
+DEBUG: 2025-03-31 19:41:58.553335 - Sending query: 'TRUST' to 127.0.0.1:12345
+DEBUG: 2025-03-31 19:41:58.553335 - Received response: 'STRING EXISTS' in 0.000000 seconds
+Query: 'TRUST' - Response: STRING EXISTS
+
+DEBUG: 2025-03-31 19:41:58.553335 - Sending query: 'ENAMEL' to 127.0.0.1:12345
+DEBUG: 2025-03-31 19:41:58.553335 - Received response: 'STRING EXISTS' in 0.000000 seconds
+Query: 'ENAMEL' - Response: STRING EXISTS
+
+DEBUG: 2025-03-31 19:41:58.553335 - Sending query: '10;0;1;16;0;13;3;0;' to 127.0.0.1:12345
+DEBUG: 2025-03-31 19:41:58.553335 - Received response: 'STRING EXISTS' in 0.000000 seconds
+Query: '10;0;1;16;0;13;3;0;' - Response: STRING EXISTS
+
+DEBUG: 2025-03-31 19:41:58.568962 - Sending query: 'NNAMDI;' to 127.0.0.1:12345
+DEBUG: 2025-03-31 19:41:58.568962 - Received response: 'STRING EXISTS' in 0.000000 seconds
+Query: 'NNAMDI;' - Response: STRING EXISTS
+
+DEBUG: 2025-03-31 19:41:58.568962 - Sending query: 'CHIEF' to 127.0.0.1:12345
+DEBUG: 2025-03-31 19:41:58.568962 - Received response: 'STRING EXISTS' in 0.000000 seconds
+Query: 'CHIEF' - Response: STRING EXISTS
+
