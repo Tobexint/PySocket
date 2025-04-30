@@ -83,10 +83,11 @@ def test_load_file_into_set_success(temp_file):
     assert result == {'hello', 'world'}
 
 
-def test_load_file_into_set_not_found():
+def test_load_file_into_set_not_found(tmp_path):
     """Test loading a nonexistent file"""
+    fake_file = tmp_path / "nonexistent.txt"
     with pytest.raises(FileNotFoundError):
-        load_file_into_set('nonexistent.txt')
+        load_file_into_set(fake_file)
 
 
 def test_load_file_into_set_is_directory(tmp_path):
@@ -179,8 +180,14 @@ def test_start_server_no_ssl(mock_load_file_into_set, mock_socket_class, temp_fi
 @patch('server.ssl.SSLContext')
 @patch('server.socket.socket')
 @patch('server.load_file_into_set')
-def test_start_server_with_ssl(mock_load_file_into_set, mock_socket_class, mock_ssl_context_class, temp_file):
+def test_start_server_with_ssl(mock_load_file_into_set, mock_socket_class, mock_ssl_context_class, temp_file, tmp_path):
     """Test starting server with SSL"""
+
+    # Create dummy cert and key files in tmp_path
+    certfile = tmp_path / "dummy.crt"
+    keyfile = tmp_path / "dummy.key"
+    certfile.write_text("dummy cert content")
+    keyfile.write_text("dummy key content")
 
     mock_socket_instance = MagicMock()
     mock_socket_class.return_value = mock_socket_instance
@@ -197,13 +204,13 @@ def test_start_server_with_ssl(mock_load_file_into_set, mock_socket_class, mock_
             linuxpath=temp_file,
             reread_on_query=False,
             use_ssl=True,
-            certfile='dummy.crt',
-            keyfile='dummy.key',
+            certfile=str(certfile),
+            keyfile=str(keyfile),
             psk='dummy_psk',
             port=12345
         )
 
-    mock_ssl_context_instance.load_cert_chain.assert_called_with('dummy.crt', 'dummy.key')
+    mock_ssl_context_instance.load_cert_chain.assert_called_with(str(certfile), str(keyfile))
     mock_ssl_context_instance.wrap_socket.assert_called()
 
 
