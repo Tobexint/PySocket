@@ -120,14 +120,32 @@ class TestCreateSSLContext:
     def test_ssl_disabled_returns_none(self, disable_ssl):
         assert create_ssl_context() is None
 
-    def test_ssl_enabled_successful_context(self, enable_ssl, mock_path_join, mock_config, mock_ssl_context):
-        context = create_ssl_context()
 
-        assert context is mock_ssl_context
-        mock_ssl_context.load_verify_locations.assert_called_once_with("/fake/path/to/certfile.crt")
-        mock_ssl_context.load_cert_chain.assert_called_once_with("/fake/path/to/certfile.crt", "/fake/path/to/certfile.crt")
-        assert mock_ssl_context.check_hostname is False
-        assert mock_ssl_context.verify_mode == ssl.CERT_REQUIRED
+    def test_ssl_enabled_successful_context(self, monkeypatch, tmp_path):
+        # Create dummy cert and key files in tmp_path
+        certfile = tmp_path / "certfile.crt"
+        keyfile = tmp_path / "keyfile.crt"
+        certfile.write_text("dummy cert")
+        keyfile.write_text("dummy key")
+
+        # Patch config['DEFAULT'] to point to our dummy cert/key filenames
+        import client
+        monkeypatch.setitem(client.config['DEFAULT'], 'CERTFILE', certfile.name)
+        monkeypatch.setitem(client.config['DEFAULT'], 'KEYFILE', keyfile.name)
+        monkeypatch.setattr(client, 'BASE_DIR', str(tmp_path))
+
+
+        # Patch ssl context methods
+        with patch('client.ssl.create_default_context') as mock_create_ctx:
+            mock_context = mock_create_ctx.return_value
+
+            context = client.create_ssl_context()
+
+            assert context is mock_context
+            mock_context.load_verify_locations.assert_called_once_with(str(certfile))
+            mock_context.load_cert_chain.assert_called_once_with(str(certfile), str(keyfile))
+            assert mock_context.check_hostname is False
+            assert mock_context.verify_mode == ssl.CERT_REQUIRED
 
     def test_ssl_enabled_load_cert_chain_failure(self, enable_ssl, mock_path_join, mock_config, monkeypatch):
         mock_context = MagicMock()
