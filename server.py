@@ -417,6 +417,7 @@ if __name__ == "__main__":
                     linuxpath, reread_on_query, use_ssl,
                     certfile, keyfile, psk, port
                     )
+
             except RuntimeError as e:
                 print(f"Server failed to start due "
                       f"to a configuration error: {e}")
@@ -436,6 +437,7 @@ if __name__ == "__main__":
                 linuxpath, reread_on_query, use_ssl,
                 certfile, keyfile, psk, port
             ) = load_config(config)
+
         except RuntimeError as e:
             print(f"Error loading configuration: {e}")
             sys.exit(1)

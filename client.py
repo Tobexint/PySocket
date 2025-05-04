@@ -51,12 +51,15 @@ def create_ssl_context():
     try:
         # Create an ssl context
         context = ssl.create_default_context()
+
         # Verify certfile location
         context.load_verify_locations(certfile)
+
         # Load ssl cert and key files
         context.load_cert_chain(certfile, keyfile)
         context.check_hostname = False
         context.verify_mode = ssl.CERT_REQUIRED
+
         return context
 
     except ssl.SSLError as e:
