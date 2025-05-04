@@ -21,13 +21,16 @@ This server listens for incoming client connections and searches for user-provid
 - Dynamic file reloading based on configuration.
 - Efficient lookup using a hash set.
 
+## Load the env file
+echo CONFIG=config.ini > .env
+
 ## Configuration
 The server(server.py) reads its settings from a configuration file (`config.ini`).
 
 ### Configuration Parameters
 | Parameter          | Description                                                   | Type    | Default |
 |-------------------|---------------------------------------------------------------|---------|---------|
-| linuxpath        | Path to the file containing searchable strings                | String  | None    |
+| linuxpath        | Path to the file containing search strings                | String  | None    |
 | REREAD_ON_QUERY  | Whether to reload the file on every query                     | Boolean | False   |
 | USE_SSL          | Whether to enable SSL encryption                              | Boolean | False   |
 | CERTFILE         | Path to the SSL certificate file                              | String  | None    |
@@ -39,8 +42,8 @@ The server(server.py) reads its settings from a configuration file (`config.ini`
 
 ### 1. Configuration Loader (`load_config`)
 **Function:** Loads server configuration from `config.ini`.
-- Uses Python’s ConfigParser to read configuration values from a .ini file.
-- Dynamically resolves the full absolute path to the config.ini file, based on the location of the script.
+- Uses Python’s configParser to read configuration values from a .ini file.
+- Dynamically resolves the full absolute path to the config.ini file based on the location of the script.
 - Reads values for file path, SSL settings, port, etc.
 - Validates SSL configuration if enabled.
 - Returns the configuration parameters.
@@ -69,6 +72,11 @@ The server(server.py) reads its settings from a configuration file (`config.ini`
 - Supports SSL encryption if configured.
 - Listens for incoming connections and starts threads for each client.
 - Gracefully handles shutdown on keyboard interruption.
+
+### 6. Linux Daemon(`daemonize`)
+**Function:** Runs script as a linux daemon.
+- Creates a background process that is fully detached from any terminal or user session.
+- Forms the basis of creating a daemon in Unix-like systems.
 
 ## Usage
 ### Running the Server
@@ -104,7 +112,7 @@ To enable ssl, set it to true in both the client.py and config.ini files.
 # Server Stress Test Script Documentation
 
 ## Overview
-This script is designed to stress test a server by simulating multiple concurrent clients sending queries. It measures the server's response time and calculates the queries per second (QPS) to evaluate performance under heavy load. This script was tested on a 250,000 lines file.
+This script is designed to stress test a server by simulating multiple concurrent clients sending queries. It measures the server's response time and calculates the queries per second (QPS) to evaluate performance under heavy load. This script was tested on a file with 250,000 lines.
 
 ## Requirements
 - Python 3.x
