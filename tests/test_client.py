@@ -105,8 +105,10 @@ def mock_config(monkeypatch):
     monkeypatch.setattr("client.config", {"DEFAULT": {"CERTFILE": "certfile.crt", "KEYFILE": "keyfile.key"}})
 
 @pytest.fixture
-def mock_path_join(monkeypatch):
-    monkeypatch.setattr("client.os.path.join", lambda *args: "/fake/path/to/certfile.crt")
+def mock_path_join(monkeypatch, tmp_path):
+    fake_cert_path = tmp_path / "certfile.crt"
+    monkeypatch.setattr("client.create_ssl_context", lambda: str(fake_cert_path))
+    yield
 
 @pytest.fixture
 def disable_ssl(monkeypatch):
@@ -130,9 +132,11 @@ class TestCreateSSLContext:
 
         # Patch config['DEFAULT'] to point to our dummy cert/key filenames
         import client
-        monkeypatch.setitem(client.config['DEFAULT'], 'CERTFILE', certfile.name)
-        monkeypatch.setitem(client.config['DEFAULT'], 'KEYFILE', keyfile.name)
+        monkeypatch.setitem(client.config['DEFAULT'], 'CERTFILE', str(certfile))
+        monkeypatch.setitem(client.config['DEFAULT'], 'KEYFILE', str(keyfile))
         monkeypatch.setattr(client, 'BASE_DIR', str(tmp_path))
+
+        monkeypatch.setattr(client, 'USE_SSL', True)
 
 
         # Patch ssl context methods
@@ -142,6 +146,7 @@ class TestCreateSSLContext:
             context = client.create_ssl_context()
 
             assert context is mock_context
+            mock_create_ctx.assert_called_once()
             mock_context.load_verify_locations.assert_called_once_with(str(certfile))
             mock_context.load_cert_chain.assert_called_once_with(str(certfile), str(keyfile))
             assert mock_context.check_hostname is False
