@@ -28,7 +28,7 @@ def temp_file():
     os.remove(temp_path)
 
 
-def test_load_config_success(monkeypatch):
+def test_load_config_success(monkeypatch, tmp_path):
     """Test successful loading of configuration"""
 
     dummy_config_content = """
@@ -55,11 +55,11 @@ def test_load_config_success(monkeypatch):
          patch('server.os.path.isfile', return_value=True):
 
         mock_config.__getitem__.side_effect = lambda key: {
-            'linuxpath': 'dummy.txt',
+            'linuxpath': tmp_path / 'dummy.txt',
             'REREAD_ON_QUERY': 'True',
             'USE_SSL': 'False',
-            'CERTFILE': 'dummy.crt',
-            'KEYFILE': 'dummy.key',
+            'CERTFILE': tmp_path / 'dummy.crt',
+            'KEYFILE': tmp_path / 'dummy.key',
             'PSK': 'dummy_psk',
             'PORT': '5555'
         }
