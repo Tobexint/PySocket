@@ -44,14 +44,16 @@ On your terminal, execute:
 The server (server.py) reads its settings from a configuration file (config.ini).
 
 ### Configuration Parameters
-Parameter	Description	Type	Default
-linuxpath	Path to the file containing search strings	String	None
-REREAD_ON_QUERY	Whether to reload the file on every query	Boolean	False
-USE_SSL	Whether to enable SSL encryption	Boolean	False
-CERTFILE	Path to the SSL certificate file	String	None
-KEYFILE	Path to the SSL private key file	String	None
-PSK	Pre-shared key for SSL encryption (not implemented)	String	None
-PORT	Port number on which the server listens	Integer	12345
+| Parameter          | Description                                                   | Type    | Default |
+|-------------------|---------------------------------------------------------------|---------|---------|
+| linuxpath        | Path to the file containing search strings                | String  | None    |
+| REREAD_ON_QUERY  | Whether to reload the file on every query                     | Boolean | False   |
+| USE_SSL          | Whether to enable SSL encryption                              | Boolean | False   |
+| CERTFILE         | Path to the SSL certificate file                              | String  | None    |
+| KEYFILE          | Path to the SSL private key file                              | String  | None    |
+| PSK             | Pre-shared key for SSL encryption (not implemented)           | String  | None    |
+| PORT            | Port number on which the server listens                        | Integer | 12345   |
+
 
 ## Components and Functions
 ### 1. Configuration Loader (load_config)
@@ -133,11 +135,13 @@ python client.py
 ```
 
 ## Error Handling
-Error Message	Cause	Resolution
-File not found: <path>	Configured file does not exist	Check linuxpath in config.ini
-ERROR: Query too long	Query exceeds 200 characters	Send a shorter query
-ERROR: Unable to read data file	File is missing or unreadable	Verify file path and permissions
-ERROR: Server encountered an error	Unexpected issue in query processing	Check server logs
+| Error Message                    | Cause                                       | Resolution                        |
+|-----------------------------------|--------------------------------------------|----------------------------------|
+| `File not found: <path>`         | Configured file does not exist             | Check `linuxpath` in `config.ini`|
+| `ERROR: Query too long`          | Query exceeds 200 characters               | Send a shorter query            |
+| `ERROR: Unable to read data file`| File is missing or unreadable              | Verify file path and permissions|
+| `ERROR: Server encountered an error` | Unexpected issue in query processing  | Check server logs                |
+
 
 ## Security Considerations
 To enable SSL, set it to True in both client.py and config.ini.
