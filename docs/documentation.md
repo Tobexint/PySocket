@@ -44,7 +44,7 @@ On your terminal, execute:
 The server (server.py) reads its settings from a configuration file (config.ini).
 
 ## Setting Up SSL for Secure Communication
-To enable HTTPS and secure communication between the client and server, you need to generate SSL certificate and key files.
+To enable HTTPS and secure communication between the client and server, you need to generate an SSL certificate and key files.
 For development purposes, you can create a self-signed certificate using the steps below:
 
 1. Generate a 2048-bit RSA private key:
@@ -57,8 +57,8 @@ On your terminal, run: openssl genrsa -out cert.key 2048
    - openssl x509 -req -days 365 -in server.csr -signkey cert.key -out ssl.crt
 
 This will produce:
-    - cert.key : your private key
-    - ssl.crt : your ssl certificate
+    - cert.key : Your private key
+    - ssl.crt : Your SSL certificate
 
 ### Configuration Parameters
 | Parameter          | Description                                                   | Type    | Default |
