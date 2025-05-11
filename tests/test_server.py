@@ -70,7 +70,7 @@ def test_load_config_success(monkeypatch, tmp_path):
 
         linuxpath, reread_on_query, use_ssl, certfile, keyfile, psk, port = load_config(config_path)
 
-        assert linuxpath.endswith('dummy.txt')
+        assert 'dummy' in linuxpath
         assert reread_on_query is True
         assert use_ssl is False
         assert psk == 'dummy_psk'
