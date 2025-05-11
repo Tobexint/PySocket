@@ -19,7 +19,7 @@
 
 - The config.ini file is the configuration file.
 
-- The docs folder contains the project's documentation(check the documentation.md file ).
+- The docs folder contains the project's documentation (see documentation.md).
 
 - The tests folder contains the pytest files.
 
@@ -40,7 +40,7 @@ Alternatively in the tests folder, run:
 
 
 ## Setting Up SSL for Secure Communication
-To enable HTTPS and secure communication between the client and server, you need to generate SSL certificate and key files.
+To enable HTTPS and secure communication between the client and server, you need to generate an SSL certificate and key files.
 For development purposes, you can create a self-signed certificate using the steps below:
 
 1. Generate a 2048-bit RSA private key:
@@ -53,8 +53,8 @@ On your terminal, run: openssl genrsa -out cert.key 2048
    - openssl x509 -req -days 365 -in server.csr -signkey cert.key -out ssl.crt
 
 This will produce:
-    - cert.key : your private key
-    - ssl.crt : your ssl certificate
+    - cert.key : Your private key
+    - ssl.crt : Your SSL certificate
 
 ## Running a Python Script as a Windows Service Using NSSM
 1. Prerequisites
@@ -70,7 +70,7 @@ Download from https://nssm.cc/download.
 Extract and move nssm.exe to C:\Windows\System32\ for easy access.
 
 3. Prepare Your Python Script
-Ensure your script (server.py) is located in a known directory (e.g., C:\Users\USER\ALGO\).
+Ensure your script (`server.py`) is located in a known directory (e.g., C:\Users\USER\ALGO\).
 
 4. Install the Service with NSSM
 Run:
@@ -121,7 +121,7 @@ Remove:
 nssm remove MyPythonService confirm
 ```
 
-Running The Test Files
+Running the Test Files
 1. Client File test
 ```bash
 pytest test_client.py
@@ -132,7 +132,7 @@ pytest test_client.py
 pytest test_server.py
 ```
 3. Speed Test
-Toggle reread_on_query options to true/false then run:
+Toggle reread_on_query options to true or false then run:
 ```bash
 python speed_test.py
 ```
