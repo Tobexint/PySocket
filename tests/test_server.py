@@ -33,11 +33,11 @@ def test_load_config_success(monkeypatch, tmp_path):
 
     dummy_config_content = """
     [DEFAULT]
-    linuxpath = dummy.txt
+    linuxpath = dummy_path
     REREAD_ON_QUERY = True
     USE_SSL = False
-    CERTFILE = dummy.crt
-    KEYFILE = dummy.key
+    CERTFILE = dummy_crt
+    KEYFILE = dummy_key
     PSK = dummy_psk
     PORT = 5555
     """
