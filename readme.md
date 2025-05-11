@@ -1,15 +1,26 @@
 ## File Structure
 - The .env file stores the environment variable for the config.ini file.
-- The data folder holds the 'k.txt' files that contains the sample search strings.
+
+- The data folder holds the k.txt files that contain the sample search strings.
+
 - The requirements.txt file contains the project dependencies.
+
 - The server.py file contains the server code.
-- The client.py is the client for testing the server.
+
+- client.py is the client for testing the server.
+
 - The speed_test.py file compares the various search algorithms.
-- The stress_server_test.py file simulates the server performance under high load.
+
+- The stress_server_test.py file simulates the server's performance under high load.
+
 - The log folder contains the log output.
-- The ssl folder houses the ssl.crt and cert.key files that contains the ssl certificate and key respectively.
-- The config.ini is the configuration file.
+
+- The ssl folder holds the ssl.crt and cert.key files that contain the ssl certificate and key respectively.
+
+- The config.ini file is the configuration file.
+
 - The docs folder contains the project's documentation(check the documentation.md file ).
+
 - The tests folder contains the pytest files.
 
 ## Installation
@@ -29,7 +40,8 @@ Alternatively in the tests folder, run:
 
 
 ## Setting Up SSL for Secure Communication
-Generate SSL files (self-signed certificate)
+To enable HTTPS and secure communication between the client and server, you need to generate SSL certificate and key files.
+For development purposes, you can create a self-signed certificate using the steps below:
 
 1. Generate a 2048-bit RSA private key:
 On your terminal, run: openssl genrsa -out cert.key 2048
@@ -40,6 +52,9 @@ On your terminal, run: openssl genrsa -out cert.key 2048
 3. Generate a self-signed certificate valid for one year:
    - openssl x509 -req -days 365 -in server.csr -signkey cert.key -out ssl.crt
 
+This will produce:
+    - cert.key : your private key
+    - ssl.crt : your ssl certificate
 
 ## Running a Python Script as a Windows Service Using NSSM
 1. Prerequisites
