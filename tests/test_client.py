@@ -34,7 +34,7 @@ def test_send_request_no_ssl(mock_create_connection, mock_create_ssl_context):
     mock_create_connection.return_value.__enter__.return_value = mock_socket
     response = send_request("test query")
     assert response == "MOCK RESPONSE"
-    #mock_socket.sendall.assert_called_with(b"test query")
+    mock_socket.sendall.assert_called_with(b"test query")
 
 # Test sending a request successfully with SSL
 @patch("socket.create_connection")
@@ -102,7 +102,7 @@ def mock_ssl_context(monkeypatch):
 
 @pytest.fixture
 def mock_config(monkeypatch):
-    monkeypatch.setattr("client.config", {"DEFAULT": {"CERTFILE": "certfile.crt", "KEYFILE": "keyfile.key"}})
+    monkeypatch.setattr("client.config", {"DEFAULT": {"CERTFILE": "cert", "KEYFILE": "key"}})
 
 @pytest.fixture
 def mock_path_join(monkeypatch, tmp_path):
