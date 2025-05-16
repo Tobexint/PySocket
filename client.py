@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 HOST = "127.0.0.1"  # Server IP address (localhost)
 PORT = 12345  # Server port
 
-USE_SSL = True  # Flag to indicate whether to use SSL
+USE_SSL = False  # Flag to indicate whether to use SSL
 PSK = None  # Pre-shared key if using PSK
 
 # Get the env variable
@@ -19,12 +19,9 @@ load_dotenv()
 # Load the config file
 CONFIG_FILE = os.getenv("CONFIG")
 
-# Get the directory where the current script lives
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
 # Load the config file
 config = configparser.ConfigParser()
-config.read(os.path.join(BASE_DIR, CONFIG_FILE))
+config.read(CONFIG_FILE)
 
 # Test queries
 TEST_QUERIES = [
@@ -45,8 +42,12 @@ def create_ssl_context():
         return None
 
     # Retrieve the certfile and keyfile for ssl authentication
-    certfile = os.path.join(BASE_DIR, config['DEFAULT']['CERTFILE'])
-    keyfile = os.path.join(BASE_DIR, config['DEFAULT']['KEYFILE'])
+    certfile = config.get('DEFAULT', 'CERTFILE')
+    keyfile = config.get('DEFAULT', 'KEYFILE')
+
+    if not certfile or not keyfile:
+        raise ValueError("CERTFILE and KEYFILE "
+                         "must be defined in the config file.")
 
     try:
         # Create an ssl context
