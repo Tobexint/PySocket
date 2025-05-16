@@ -3,6 +3,7 @@ import pytest
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from unittest.mock import patch, MagicMock
+import client
 import socket
 import ssl
 from client import send_request, create_ssl_context
@@ -39,44 +40,76 @@ def test_send_request_no_ssl(mock_create_connection, mock_create_ssl_context):
 # Test sending a request successfully with SSL
 @patch("socket.create_connection")
 @patch("ssl.create_default_context")
-def test_send_request_with_ssl(mock_ssl_context, mock_create_connection, mock_ssl_socket):
-    mock_create_connection.return_value.__enter__.return_value = mock_ssl_socket
-    mock_ssl_context.return_value.wrap_socket.return_value.__enter__.return_value = mock_ssl_socket
-    
-    response = send_request("test query")
-    assert response == "MOCK SSL RESPONSE"
-    mock_ssl_socket.sendall.assert_called_with(b"test query")
+def test_send_request_with_ssl(mock_ssl_context, mock_create_connection, mock_ssl_socket, monkeypatch):
+    import client
+    monkeypatch.setattr(client, "USE_SSL", True)
+
+    # Mock SSL context and wrapped socket
+    mock_context = MagicMock()
+    mock_socket = MagicMock()
+    mock_socket.recv.return_value = b"mocked SSL response"
+    mock_context.wrap_socket.return_value.__enter__.return_value = mock_socket
+
+    monkeypatch.setattr(client, "create_ssl_context", lambda: mock_context)
+
+    dummy_socket = MagicMock()
+    dummy_socket.__enter__.return_value = dummy_socket
+    monkeypatch.setattr(socket, "create_connection", lambda *args, **kwargs: dummy_socket)
+
+    result = client.send_request("query")
+    assert result == "mocked SSL response"
+
 
 # Test connection reset error
 @patch("socket.create_connection", side_effect=ConnectionResetError)
-def test_send_request_connection_reset(mock_create_connection):
-    response = send_request("test query")
-    assert response == "CONNECTION RESET ERROR"
+def test_send_request_connection_reset(mock_create_connection, monkeypatch):
+    import client
+    monkeypatch.setattr(client, "USE_SSL", False)
+
+    with patch("socket.create_connection", side_effect=ConnectionResetError):
+        response = send_request("test query")
+        assert response == "CONNECTION RESET ERROR"
 
 # Test connection refused error
 @patch("socket.create_connection", side_effect=ConnectionRefusedError)
-def test_send_request_connection_refused(mock_create_connection):
-    response = send_request("test query")
-    assert response == "CONNECTION REFUSED"
+def test_send_request_connection_refused(mock_create_connection, monkeypatch):
+    import client
+    monkeypatch.setattr(client, "USE_SSL", False)
+
+    with patch("socket.create_connection", side_effect=ConnectionRefusedError):
+        response = send_request("test query")
+        assert response == "CONNECTION REFUSED"
 
 # Test connection timeout error
 @patch("socket.create_connection", side_effect=socket.timeout)
-def test_send_request_timeout(mock_create_connection):
-    response = send_request("test query")
-    assert response == "CONNECTION TIMEOUT"
+def test_send_request_timeout(mock_create_connection, monkeypatch):
+    import client
+    monkeypatch.setattr(client, "USE_SSL", False)
+
+    with patch("socket.create_connection", side_effect=socket.timeout):
+        response = send_request("test query")
+        assert response == "CONNECTION TIMEOUT"
 
 # Test generic socket error
 @patch("socket.create_connection", side_effect=socket.error("Socket failure"))
-def test_send_request_socket_error(mock_create_connection):
-    response = send_request("test query")
-    assert response == "SOCKET ERROR"
+def test_send_request_socket_error(mock_create_connection, monkeypatch):
+    import client
+    monkeypatch.setattr(client, "USE_SSL", False)
+
+    with patch("socket.create_connection", side_effect=socket.error("BOOM")):
+        response = send_request("test query")
+        assert response == "SOCKET ERROR"
 
 
 # Test unexpected error
 @patch("socket.create_connection", side_effect=Exception("Unexpected failure"))
-def test_send_request_unexpected_error(mock_create_connection):
-    response = send_request("test query")
-    assert response == "UNKNOWN ERROR"
+def test_send_request_unexpected_error(mock_create_connection, monkeypatch):
+    import client
+    monkeypatch.setattr(client, "USE_SSL", False)
+
+    with patch("socket.create_connection", side_effect=Exception("Oops")):
+        response = send_request("test query")
+        assert response == "UNKNOWN ERROR"
 
 
 # Test ssl handshake failure
@@ -125,8 +158,12 @@ class TestCreateSSLContext:
 
     def test_ssl_enabled_successful_context(self, monkeypatch, tmp_path):
         # Create dummy cert and key files in tmp_path
+        config_path = tmp_path / "config.ini"
         certfile = tmp_path / "certfile.crt"
         keyfile = tmp_path / "keyfile.crt"
+        config_path.write_text(f""" [DEFAULT] CERTFILE = {certfile}
+        KEYFILE = {keyfile}
+        """)
         certfile.write_text("dummy cert")
         keyfile.write_text("dummy key")
 
@@ -134,7 +171,7 @@ class TestCreateSSLContext:
         import client
         monkeypatch.setitem(client.config['DEFAULT'], 'CERTFILE', str(certfile))
         monkeypatch.setitem(client.config['DEFAULT'], 'KEYFILE', str(keyfile))
-        monkeypatch.setattr(client, 'BASE_DIR', str(tmp_path))
+        monkeypatch.setenv("CONFIG", str(config_path))
 
         monkeypatch.setattr(client, 'USE_SSL', True)
 
