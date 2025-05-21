@@ -9,7 +9,7 @@
 
 - The server.py file contains the server code.
 
-- client.py is the client for testing the server.
+- client.py is the client that tests the server.
 
 - The speed_test.py file compares the various search algorithms.
 
@@ -36,25 +36,40 @@ This server listens for incoming client connections and searches for user-provid
 
 - Efficient lookup using a hash set.
 
+## Installation
+To install dependencies, run: pip install -r requirements.txt
+
 ## Load the .env File
 On your terminal, execute:
-- echo CONFIG=config.ini > .env
+```bash
+echo CONFIG=config.ini > .env
+```
+This creates a .env file containing the necessary environment variables.
 
 ## Configuration
 The server (server.py) reads its settings from a configuration file (config.ini).
 
 ## Setting Up SSL for Secure Communication
-To enable HTTPS and secure communication between the client and server, you need to generate an SSL certificate and key files.
+You need to generate an SSL certificate and key files to enable HTTPS and secure communication between the client and server.
 For development purposes, you can create a self-signed certificate using the steps below:
 
 1. Generate a 2048-bit RSA private key:
-On your terminal, run: openssl genrsa -out cert.key 2048
+On your terminal, run:
+
+```bash
+openssl genrsa -out cert.key 2048
+```
 
 2. Create a certificate signing request (CSR):
-   - openssl req -new -key cert.key -out server.csr
+
+```bash
+openssl req -new -key cert.key -out server.csr
+```
 
 3. Generate a self-signed certificate valid for one year:
-   - openssl x509 -req -days 365 -in server.csr -signkey cert.key -out ssl.crt
+```bash
+openssl x509 -req -days 365 -in server.csr -signkey cert.key -out ssl.crt
+```
 
 This will produce:
     - cert.key : Your private key
@@ -76,7 +91,7 @@ This will produce:
 ### 1. Configuration Loader (load_config)
 **Function:** Loads server configuration from config.ini.
 
-- Uses Python’s configparser to read configuration values from an .ini file.
+- Uses Python’s config parser to read configuration values from a .ini file.
 
 - Dynamically resolves the full absolute path to the config.ini file based on the script location.
 
@@ -127,7 +142,7 @@ This will produce:
 ### 6. Linux Daemon (daemonize)
 **Function:** Runs the script as a Linux daemon.
 
-- Creates a background process that is fully detached from any terminal or user session.
+- Creates a background process fully detached from any terminal or user session.
 
 - Forms the basis of creating a daemon in Unix-like systems.
 
@@ -150,6 +165,12 @@ Execute in a different terminal window:
 ```bash
 python client.py
 ```
+
+### SSL
+To enable ssl, set USE_SSL to True in the config.ini and client.py files.
+
+### Reread on query
+To activate this functionality, set REREAD_ON_QUERY to True in the config.ini file.
 
 ## Error Handling
 | Error Message                    | Cause                                       | Resolution                        |
@@ -255,8 +276,22 @@ Total Execution Time: 459.87 sec
 
 - **Script crashes:** Reduce NUM_THREADS or NUM_REQUESTS to lower the load.
 
+## Type Checking and Linting
+This project utilizes:
+
+- **Type Annotations:** For improved code readability and maintainability, all functions and variables are type-hinted where appropriate.
+
+**mypy:** A static type checker used to verify the correctness of type annotations. The code has been validated with mypy to ensure type consistency.
+
+**PEP8 Compliance:** The code generally adheres to PEP8 style guidelines for Python code, promoting consistency and readability.
+
+To verify type correctness locally, run:
+```bash
+python -m mypy server.py
+```
+
 ## License
-This script is provided under the MIT License. Modify and use it at your own discretion.
+This script is provided under the MIT License. Modify and use it at your discretion.
 
 ## Linux Daemon Installation Instructions
 1. Prerequisites
