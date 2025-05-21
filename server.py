@@ -16,16 +16,30 @@ load_dotenv()
 # Load the config file.
 CONFIG_FILE = os.getenv("CONFIG")
 
+# Ensure CONFIG_FILE is not None.
+# If it's None, it means the environment variable wasn't set.
+if CONFIG_FILE is None:
+    print("ERROR: CONFIG environment variable not set. "
+          "Please specify the path to the config file.")
+    sys.exit(1)  # Exit the script if the config file path is not provided
+
+# Added check for type safety, though os.getenv usually returns str
+if not isinstance(CONFIG_FILE, str):
+    print("ERROR: CONFIG environment variable value is not a string.")
+    sys.exit(1)
+
 # Read the config file.
 config = configparser.ConfigParser()
 config.read(CONFIG_FILE)
 
 # Global variable to hold preloaded lines as a hash set.
-preloaded_set = set()
+preloaded_set: Set[str] = set()
 
 
 # Function to load configuration from a file.
-def load_config(file_path: str) -> Tuple[str, bool, bool, str, str, str, int]:
+def load_config(
+        file_path: str
+) -> Tuple[str, bool, bool, str, str, str | None, int]:
     """
     Reads and loads server configuration from a config file.
     """
@@ -275,7 +289,7 @@ def handle_client(client_socket: socket.socket, address: Tuple[str, int],
 
 # Function to start the server.
 def start_server(linuxpath: str, reread_on_query: bool, use_ssl: bool,
-                 certfile: str, keyfile: str, psk: str, port: int):
+                 certfile: str, keyfile: str, psk: str | None, port: int):
     """
     Starts the server and listens for incoming client connections.
     """
@@ -409,7 +423,7 @@ if __name__ == "__main__":
                 (
                     linuxpath, reread_on_query, use_ssl,
                     certfile, keyfile, psk, port
-                ) = load_config(config)  # Pass the configuration file.
+                ) = load_config(CONFIG_FILE)  # Pass the configuration file.
 
                 start_server(
                     linuxpath, reread_on_query, use_ssl,
@@ -434,7 +448,7 @@ if __name__ == "__main__":
             (
                 linuxpath, reread_on_query, use_ssl,
                 certfile, keyfile, psk, port
-            ) = load_config(config)
+            ) = load_config(CONFIG_FILE)
 
         except RuntimeError as e:
             print(f"Error loading configuration: {e}.")
