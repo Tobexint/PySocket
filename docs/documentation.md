@@ -270,6 +270,12 @@ Total Execution Time: 459.87 sec
 - High NUM_THREADS and NUM_REQUESTS values may overwhelm the server.
 
 ## Troubleshooting
+- **CONFIG environment variable not set:** Ensure you have correctly set the CONFIG environment variable to point to your config.ini file.
+
+- **SSL certificate or key file not found / Error loading SSL certificate or key:** Double-check the paths and permissions for CERTFILE and KEYFILE in your config.ini if USE_SSL is True.
+
+- **Address already in use:** Another process is likely using the specified PORT. Wait a moment or change the PORT in your config.ini.
+
 - **Connection refused:** Ensure the server is running and listening on the specified HOST and PORT.
 
 - **Slow response times:** Check network latency and server performance.
@@ -279,7 +285,7 @@ Total Execution Time: 459.87 sec
 ## Type Checking and Linting
 This project utilizes:
 
-- **Type Annotations:** For improved code readability and maintainability, all functions and variables are type-hinted where appropriate.
+**Type Annotations:** For improved code readability and maintainability, all functions and variables are type-hinted where appropriate.
 
 **mypy:** A static type checker used to verify the correctness of type annotations. The code has been validated with mypy to ensure type consistency.
 
@@ -289,9 +295,6 @@ To verify type correctness locally, run:
 ```bash
 python -m mypy server.py
 ```
-
-## License
-This script is provided under the MIT License. Modify and use it at your discretion.
 
 ## Linux Daemon Installation Instructions
 1. Prerequisites
@@ -307,7 +310,7 @@ Make the script executable.
 
 3. Create a systemd Service File
 Add the following content to /etc/systemd/system/mypythonservice.service:
-
+"""
 [Unit]
 Description=My Python Daemon Service
 After=network.target
@@ -322,6 +325,8 @@ StandardError=append:/home/user/ALGO/myscript_error.log
 
 [Install]
 WantedBy=multi-user.target
+"""
+Note: Replace the file paths with the appropriate values.
 
 Save and exit.
 
@@ -357,3 +362,33 @@ sudo systemctl disable mypythonservice
 sudo rm /etc/systemd/system/mypythonservice.service
 sudo systemctl daemon-reload
 ```
+
+### Running as a Linux Daemon
+To run the server in the background as a daemon process(detached from the terminal):
+```bash
+python server.py --daemon
+```
+- **Output Redirection:** When run as a daemon, sys.stdout and sys.stderr are flushed, but by default, they are not redirected to a file. For production use, it's highly recommended to redirect standard output and standard error to log files.
+```bash
+python server.py --daemon > /var/log/server.log 2>&1 &
+```
+This command will:
+- > /var/log/server.log: Redirect standard output to server.log.
+- 2>&1: Redirect standard error to the same location as standard output.
+- &: Run the command in the background.
+
+Note: Replace the file paths with the appropriate values.
+
+- **Checking Daemon Status:** You can use ps and grep to check if the daemon is running:
+```bash
+ps aux | grep server.py
+```
+
+- **Stopping the Daemon:** You'll need to find the process ID (PID) using ps aux and then use kill to terminate it:
+```bash
+kill <PID>
+```
+For example: kill 12345 (replace 12345 with the actual PID).
+
+### License
+This project is open-source and available under the MIT License.
