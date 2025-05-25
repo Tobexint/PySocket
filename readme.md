@@ -56,72 +56,79 @@ This will produce:
     - cert.key : Your private key
     - ssl.crt : Your SSL certificate
 
-## Running a Python Script as a Windows Service Using NSSM
+## Linux Daemon Installation Instructions
 1. Prerequisites
-Windows OS
+    - Linux Operating System
+    - Python installed
+    - Your script (e.g., server.py) in a known directory
 
-Python installed (Check with 'which python' in Git Bash)
-
-NSSM (Non-Sucking Service Manager)
-
-2. Install NSSM
-Download from https://nssm.cc/download.
-
-Extract and move nssm.exe to C:\Windows\System32\ for easy access.
-
-3. Prepare Your Python Script
-Ensure your script (`server.py`) is located in a known directory (e.g., C:\Users\USER\ALGO\).
-
-4. Install the Service with NSSM
-Run:
-
+2. Create a systemd service file.
 ```bash
-nssm install MyPythonService
+sudo vim /etc/systemd/system/mypythonservice.service
 ```
-In the GUI:
+Paste the following:
+"""
+[Unit]
+Description=My Python Service
+After=network.target
 
-Path: Set to Python executable (e.g., C:\Python312\python.exe).
+[Service]
+Type=simple
+User=youruser
+WorkingDirectory=/home/youruser/ALGO
+ExecStart=/usr/bin/python3 /home/youruser/ALGO/server.py
+StandardOutput=append:/home/youruser/ALGO/server_output.log
+StandardError=append:/home/youruser/ALGO/server_error.log
+Restart=always
 
-Startup directory: C:\Users\USER\ALGO.
+[Install]
+WantedBy=multi-user.target
+"""
+Note: Replace 'youruser' and paths with actual values.
 
-Arguments: server.py.
-
-I/O Tab:
-
-Stdout: C:\Users\USER\ALGO\server_output.log.
-
-Stderr: C:\Users\USER\ALGO\server_error.log.
-
-Click Install Service.
-
-5. Start and Manage the Service
-Start service:
-
+3. Enable and start the service.
 ```bash
-nssm start MyPythonService
+sudo systemctl daemon-reexec
+sudo systemctl daemon-reload
+sudo systemctl enable mypythonservice.service
+sudo systemctl start mypythonservice.service
 ```
-Check status:
-
+4. Manage the service.
 ```bash
-nssm status MyPythonService
-```
-Restart:
-
-```bash
-nssm restart MyPythonService
-```
-Stop:
-
-```bash
-nssm stop MyPythonService
-```
-Remove:
-
-```bash
-nssm remove MyPythonService confirm
+sudo systemctl status mypythonservice.service
+sudo systemctl restart mypythonservice.service
+sudo systemctl stop mypythonservice.service
+sudo systemctl disable mypythonservice.service
 ```
 
-Running the Test Files
+## Running as a Linux Daemon
+To run the server in the background as a daemon process(detached from the terminal):
+```bash
+python server.py --daemon
+```
+- **Output Redirection:** When run as a daemon, sys.stdout and sys.stderr are flushed, but by default, they are not redirected to a file. For production use, it's highly recommended to redirect standard output and standard error to log files.
+```bash
+python server.py --daemon > /var/log/server.log 2>&1 &
+```
+This command will:
+- > /var/log/server.log: Redirect standard output to server.log.
+- 2>&1: Redirect standard error to the same location as standard output.
+- &: Run the command in the background.
+
+Note: Replace the file paths with the appropriate values.
+
+- **Checking Daemon Status:** You can use ps and grep to check if the daemon is running:
+```bash
+ps aux | grep server.py
+```
+
+- **Stopping the Daemon:** You'll need to find the process ID (PID) using ps aux and then use kill to terminate it:
+```bash
+kill <PID>
+```
+For example: kill 12345 (replace 12345 with the actual PID).
+
+## Running the Test Files
 1. Client File test
 ```bash
 pytest test_client.py
