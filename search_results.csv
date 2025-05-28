@@ -1,0 +1,19 @@
+File Size,Algorithm,Found,Time (s)
+Small (15k+),Linear Search,False,0.0
+Small (15k+),Binary Search,False,0.0
+Small (15k+),Hash Set Lookup,False,0.0
+Small (15k+),Regex Search,False,0.017990589141845703
+Small (15k+),Rabin-Karp Search,False,0.14890336990356445
+Small (15k+),Knuth-Morris-Pratt (KMP) Search,False,0.25883984565734863
+Medium (150k+),Linear Search,True,0.0030019283294677734
+Medium (150k+),Binary Search,True,0.0
+Medium (150k+),Hash Set Lookup,True,0.0
+Medium (150k+),Regex Search,True,0.15290451049804688
+Medium (150k+),Rabin-Karp Search,True,1.4411048889160156
+Medium (150k+),Knuth-Morris-Pratt (KMP) Search,True,2.5094501972198486
+Large (1M+),Linear Search,True,0.00799560546875
+Large (1M+),Binary Search,True,0.0
+Large (1M+),Hash Set Lookup,True,0.0
+Large (1M+),Regex Search,True,0.5216727256774902
+Large (1M+),Rabin-Karp Search,True,4.122448205947876
+Large (1M+),Knuth-Morris-Pratt (KMP) Search,True,8.656644344329834
