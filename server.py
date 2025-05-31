@@ -1,19 +1,19 @@
-import socket
+import configparser
+import os
 import platform
+import socket
+import ssl
 import sys
 import threading
 import time
-import configparser
-import ssl
-import os
-from typing import Tuple, Set
+from typing import Set, Tuple
+
 from dotenv import load_dotenv
 
-
-# Get the env variables.
+# Get the environment variables.
 load_dotenv()
 
-# Load the config file.
+# Load the configuration file.
 CONFIG_FILE = os.getenv("CONFIG")
 
 # Ensure CONFIG_FILE is not None.
@@ -23,12 +23,12 @@ if CONFIG_FILE is None:
           "Please specify the path to the config file.")
     sys.exit(1)  # Exit the script if the config file path is not provided
 
-# Added check for type safety, though os.getenv usually returns str
+# Added check for type safety.
 if not isinstance(CONFIG_FILE, str):
     print("ERROR: CONFIG environment variable value is not a string.")
     sys.exit(1)
 
-# Read the config file.
+# Read the configuration file.
 config = configparser.ConfigParser()
 config.read(CONFIG_FILE)
 
@@ -37,41 +37,41 @@ preloaded_set: Set[str] = set()
 
 
 # Function to load configuration from a file.
-def load_config(
-        file_path: str
-) -> Tuple[str, bool, bool, str, str, str | None, int]:
+def load_config() -> Tuple[str, bool, bool, str, str, str | None, int]:
     """
     Reads and loads server configuration from a config file.
     """
 
     try:
+        #config.read(file_path)
+
         # Retrieve the 'linuxpath' value from the 'DEFAULT' section
-        # of the config file.
+        # of the configuration file.
         linuxpath = config.get('DEFAULT', 'linuxpath')
 
         # Retrieve 'REREAD_ON_QUERY' as a boolean from the 'DEFAULT' section
-        # of the config file, defaulting to False if not found.
+        # of the configuration file, defaulting to False if not found.
         reread_on_query = config.getboolean('DEFAULT',
                                             'REREAD_ON_QUERY', fallback=False)
 
         # Retrieve 'USE_SSL' as a boolean from the 'DEFAULT' section
-        # of the config file, defaulting to False if not found.
+        # of the configuration file, defaulting to False if not found.
         use_ssl = config.getboolean('DEFAULT', 'USE_SSL', fallback=False)
 
         # Retrieve the SSL certificate file path from the 'DEFAULT' section
-        # of the config file.
+        # of the configuration file.
         certfile = config.get('DEFAULT', 'CERTFILE')
 
         # Retrieve the SSL key file path from the 'DEFAULT' section
-        # of the config file.
+        # of the configuration file.
         keyfile = config.get('DEFAULT', 'KEYFILE')
 
         # Retrieve the pre-shared key (PSK) from the 'DEFAULT' section
-        # of the config file, defaulting to None if not found.
+        # of the configuration file, defaulting to None if not found.
         psk = config.get('DEFAULT', 'PSK', fallback=None)
 
         # Retrieve the 'PORT' value as an integer from the 'DEFAULT' section
-        # of the config file, defaulting to 12345 if not found.
+        # of the configuration file, defaulting to 12345 if not found.
         port = config.getint('DEFAULT', 'PORT', fallback=12345)
 
         # Ensure the file path exists.
@@ -178,6 +178,14 @@ def handle_client(client_socket: socket.socket, address: Tuple[str, int],
     # Record the start time for performance measurement.
     start_time = time.time()
 
+    # Query parameter
+    request = ''
+
+    string_exists = False
+
+    # Execution time variable
+    execution_time = 0.0
+
     try:
         # Receive and decode the query from the client.
         request = client_socket.recv(1024).decode('utf-8').strip()
@@ -194,9 +202,6 @@ def handle_client(client_socket: socket.socket, address: Tuple[str, int],
             # Send an error message in bytes format
             # to the client indicating the query is too long.
             client_socket.sendall(b"ERROR: Query too long\n")
-
-            # Close the client socket to terminate the connection.
-            client_socket.close()
 
             # Exit the function to prevent further processing
             # of an oversized request.
@@ -423,7 +428,7 @@ if __name__ == "__main__":
                 (
                     linuxpath, reread_on_query, use_ssl,
                     certfile, keyfile, psk, port
-                ) = load_config(CONFIG_FILE)  # Pass the configuration file.
+                ) = load_config()  # Pass the configuration file.
 
                 start_server(
                     linuxpath, reread_on_query, use_ssl,
@@ -448,7 +453,7 @@ if __name__ == "__main__":
             (
                 linuxpath, reread_on_query, use_ssl,
                 certfile, keyfile, psk, port
-            ) = load_config(CONFIG_FILE)
+            ) = load_config()
 
         except RuntimeError as e:
             print(f"Error loading configuration: {e}.")
