@@ -43,8 +43,6 @@ def load_config() -> Tuple[str, bool, bool, str, str, str | None, int]:
     """
 
     try:
-        #config.read(file_path)
-
         # Retrieve the 'linuxpath' value from the 'DEFAULT' section
         # of the configuration file.
         linuxpath = config.get('DEFAULT', 'linuxpath')
@@ -280,8 +278,6 @@ def handle_client(client_socket: socket.socket, address: Tuple[str, int],
         client_socket.sendall(b"ERROR: Server encountered "
                               b"an unexpected error\n")
 
-    finally:
-        client_socket.close()
 
         # Log the query, string, and execution times.
         print(
@@ -290,6 +286,9 @@ def handle_client(client_socket: socket.socket, address: Tuple[str, int],
             f"Found: {string_exists} - "
             f"Execution Time: {execution_time:.6f} seconds."
             )
+
+    finally:
+        client_socket.close()
 
 
 # Function to start the server.
