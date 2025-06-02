@@ -3,10 +3,12 @@ import configparser
 import importlib
 import socket
 import ssl
+import subprocess
 import sys
 import tempfile
 import time
 import threading
+from test_utils import send_query, send_query_ssl, generate_self_signed_cert, find_free_port, send_query_with_retries
 from unittest.mock import patch, MagicMock
 
 import pytest
@@ -223,7 +225,7 @@ def test_handle_client_string_not_found(mock_load_file_into_set, temp_file):
         reread_on_query=True
     )
 
-    mock_socket.sendall.assert_called_with(b'STRING NOT FOUND')
+    mock_socket.sendall.assert_called_with(b'STRING NOT FOUND\n')
     mock_socket.close.assert_called()
 
 
@@ -353,66 +355,251 @@ def test_load_config_linuxpath_file_not_found(monkeypatch, tmp_path):
 
 
 def test_load_config_file_not_found(monkeypatch, tmp_path):
+    """
+    Test that load_config() raises a RuntimeError when the config file
+    specified in the CONFIG environment variable does not exist.
+
+    This simulates a missing config file and verifies error handling logic.
+    """
+    # Set CONFIG environment variable to a file that doesn't exist.
     monkeypatch.setenv('CONFIG', 'non_existent.ini')
+
+    # Patch file existence check to simulate the file is missing.
     with patch('server.os.path.isfile', return_value=False), \
          patch('server.configparser.ConfigParser') as MockConfigParser:
-        # Create a mock for config.read() to prevent it from looking for a real file.
+
+
+        # Prevent the ConfigParser from reading any actual file.
         mock_config_instance = MockConfigParser.return_value
         mock_config_instance.read.return_value = [] # No files read.
 
+        # Expect load_config() to raise a RuntimeError due to missing file.
         with pytest.raises(RuntimeError) as excinfo:
             load_config()
+
         assert "Error accessing a configured file" in str(excinfo.value)
         assert "not found" in str(excinfo.value)
 
 
+def test_load_config_malformed_file(monkeypatch, tmp_path):
+    """
+    Test that load_config() raises a RuntimeError or handles errors gracefully
+    when the config file exists but contains malformed or incomplete content.
+    """
+    # Create a malformed config file (e.g., missing sections or invalid format).
+    bad_config_file = tmp_path / "bad_config.ini"
+    bad_config_file.write_text("This is not valid INI format!")
+
+    # Point CONFIG environment variable to the malformed config file.
+    monkeypatch.setenv('CONFIG', str(bad_config_file))
+
+    # Expect load_config to raise an error due to parse failure.
+    with pytest.raises(RuntimeError) as excinfo:
+        load_config()
+
+    assert "Error accessing a configured file" in str(excinfo.value) or \
+           "Could not parse config" in str(excinfo.value)
+
+
 def test_load_config_os_error(monkeypatch, tmp_path):
+    """
+    This simulates a situation where the OS prevents access to the config file,
+    such as through permissions issues or I/O failure.
+    """
+    # Create a dummy config file.
     config_path = tmp_path / "os_error_config.ini"
     config_path.write_text("[DEFAULT]\nlinuxpath=dummy")
+
+    # Set CONFIG env variable to the dummy file's name.
     monkeypatch.setenv('CONFIG', os.path.basename(config_path))
 
+    # Patch os.path.isfile to raise an OSError.
     with patch('server.os.path.isfile', side_effect=OSError("Permission denied")), \
          patch('server.configparser.ConfigParser'):
+
+        # Expect load_config to raise a RuntimeError due to the OSError.
         with pytest.raises(RuntimeError) as excinfo:
             load_config()
+
         assert "Operating system error while accessing config file" in str(excinfo.value)
         assert "Permission denied" in str(excinfo.value)
 
 
 @patch('server.load_file_into_set')
 def test_handle_client_connection_reset_error(mock_load_file_into_set, temp_file, capfd):
+    """
+    Test that handle_client() correctly handles a ConnectionResetError caused by
+    the client forcibly resetting the connection (e.g., crashing or disconnecting).
+    """
+    # Mock file loading to avoid real file I/O.
     mock_load_file_into_set.return_value = {'hello', 'world'}
+
+    # Create a mock socket that simulates a connection reset on recv().
     mock_socket = MagicMock()
     mock_socket.recv.side_effect = ConnectionResetError("Client reset")
 
+    # Call the function under test with the mock socket and address.
     handle_client(
         client_socket=mock_socket,
         address=('127.0.0.1', 5000),
         linuxpath=temp_file,
         reread_on_query=True
     )
+
+    # Ensure the socket was closed properly.
     mock_socket.close.assert_called_once()
+
+    # Capture stdout/stderr and check for the expected warning.
     captured = capfd.readouterr()
     assert "WARNING: Connection reset by client ('127.0.0.1', 5000)" in captured.out
 
 
 @patch('server.load_file_into_set')
 def test_handle_client_socket_timeout(mock_load_file_into_set, temp_file, capfd):
+    """
+    Test that handle_client() handles socket timeouts gracefully.
+    """
+    # Mock the file-loading function to return a known word set.
     mock_load_file_into_set.return_value = {'hello', 'world'}
+
+    # Create a mock socket that simulates a timeout during recv().
     mock_socket = MagicMock()
     mock_socket.recv.side_effect = socket.timeout("Timed out")
-    mock_socket.sendall = MagicMock()
+    mock_socket.sendall = MagicMock()  # Mock sendall to capture output sent to client.
 
+
+    # Call the function under test with mock socket and address.
     handle_client(
         client_socket=mock_socket,
         address=('127.0.0.1', 5000),
         linuxpath=temp_file,
         reread_on_query=True
     )
+
+    # Assert that the server responded with a timeout error message.
     mock_socket.sendall.assert_called_with(b"ERROR: Connection timed out\n")
+
+    # Assert that the socket was closed after handling the exception.
     mock_socket.close.assert_called_once()
+
+    # Capture and check the server's logged warning message.
     captured = capfd.readouterr()
     assert "WARNING: Socket timeout with client ('127.0.0.1', 5000)" in captured.out
+
+
+@patch('server.load_file_into_set')
+def test_multiple_client_socket_timeouts(mock_load_file_into_set, temp_file, capfd):
+    """
+    Test that handle_client() handles multiple client socket timeouts concurrently.
+
+    Each mock client will trigger a socket.timeout, and the server should:
+    - Send the appropriate timeout error message.
+    - Log a warning.
+    - Close the socket.
+    """
+    mock_load_file_into_set.return_value = {'hello', 'world'}
+
+    client_count = 3
+    mock_sockets = []
+    threads = []
+
+    for i in range(client_count):
+        mock_socket = MagicMock()
+        mock_socket.recv.side_effect = socket.timeout("Timed out")
+        mock_socket.sendall = MagicMock()
+        mock_sockets.append(mock_socket)
+
+        thread = threading.Thread(
+            target=handle_client,
+            args=(mock_socket, (f'127.0.0.{i+1}', 5000 + i)),
+            kwargs={'linuxpath': temp_file, 'reread_on_query': True}
+        )
+        threads.append(thread)
+        thread.start()
+
+    for thread in threads:
+        thread.join()
+
+    # Assertions for each mock socket
+    for i, sock in enumerate(mock_sockets):
+        sock.sendall.assert_called_with(b"ERROR: Connection timed out\n")
+        sock.close.assert_called_once()
+
+    # Capture output once all threads are done
+    captured = capfd.readouterr()
+    for i in range(client_count):
+        assert f"WARNING: Socket timeout with client ('127.0.0.{i+1}', {5000 + i})" in captured.out
+
+
+@patch('server.load_file_into_set')
+def test_mixed_client_behaviors(mock_load_file_into_set, temp_file, capfd):
+    """
+    Test handle_client() with a mix of client behaviors:
+    - Some experience socket timeouts.
+    - Some reset the connection.
+    - Some send valid queries.
+    """
+    # Simulate data set.
+    mock_load_file_into_set.return_value = {'apple', 'banana'}
+
+    # Define mixed client behaviors.
+    client_scenarios = [
+        {"behavior": "timeout", "ip": "127.0.0.1", "port": 5001},
+        {"behavior": "reset", "ip": "127.0.0.2", "port": 5002},
+        {"behavior": "valid", "ip": "127.0.0.3", "port": 5003, "message": b"apple\n"},
+        {"behavior": "valid", "ip": "127.0.0.4", "port": 5004, "message": b"grape\n"},
+    ]
+
+    threads = []
+
+    for scenario in client_scenarios:
+        mock_socket = MagicMock()
+        behavior = scenario["behavior"]
+
+        if behavior == "timeout":
+            mock_socket.recv.side_effect = socket.timeout("Timed out")
+        elif behavior == "reset":
+            mock_socket.recv.side_effect = ConnectionResetError("Client reset")
+        elif behavior == "valid":
+            mock_socket.recv.side_effect = [scenario["message"], b""]  # Message, then disconnect.
+            mock_socket.sendall = MagicMock()
+
+        # Use the same mock close for all.
+        mock_socket.close = MagicMock()
+
+        thread = threading.Thread(
+            target=handle_client,
+            args=(mock_socket, (scenario["ip"], scenario["port"])),
+            kwargs={"linuxpath": temp_file, "reread_on_query": True}
+        )
+        scenario["mock_socket"] = mock_socket
+        threads.append(thread)
+        thread.start()
+
+    for thread in threads:
+        thread.join()
+
+    # Validate results.
+    captured = capfd.readouterr()
+
+    for scenario in client_scenarios:
+        sock = scenario["mock_socket"]
+        behavior = scenario["behavior"]
+        addr = f"('{scenario['ip']}', {scenario['port']})"
+
+        if behavior == "timeout":
+            sock.sendall.assert_called_with(b"ERROR: Connection timed out\n")
+            assert f"WARNING: Socket timeout with client {addr}" in captured.out
+
+        elif behavior == "reset":
+            assert f"WARNING: Connection reset by client {addr}" in captured.out
+
+        elif behavior == "valid":
+            msg = scenario["message"].decode().strip()
+            expected = b"STRING EXISTS\n" if msg in {'apple', 'banana'} else b"STRING NOT FOUND\n"
+            sock.sendall.assert_called_with(expected)
+
+        sock.close.assert_called_once()
 
 
 # Test `handle_client` with null bytes in query.
@@ -479,12 +666,6 @@ def test_start_server_ssl_cert_load_error(
     assert "ERROR: SSL certificate or key file not found: Cert file not found" in captured.out
     mock_socket_class.return_value.close.assert_called_once() # Server socket should be closed.
 
-
-# Helper function to find a free port.
-def find_free_port():
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind(('localhost', 0))
-        return s.getsockname()[1]
 
 # Test starting the server and handling multiple client connections concurrently.
 @patch('server.load_dotenv') # Avoid loading real .env during test
@@ -731,36 +912,139 @@ def test_start_server_ssl_context_error(
             )
 
 
-def send_query(query, port, results, idx):
-    try:
-        with socket.create_connection(('localhost', port), timeout=3) as s:
-            s.sendall(query.encode())
-            results[idx] = s.recv(1024).decode()
-    except Exception as e:
-        results[idx] = str(e)
-
-
 def test_concurrent_clients_reread_on_query(tmp_path):
+    """
+    Tests that the server correctly handles multiple concurrent client queries
+    when 'reread_on_query' is set to True.
+
+    The server should re-read the data file for each individual query to ensure
+    up-to-date results. This test simulates four concurrent client requests:
+
+    - Two for strings that exist in the file.
+    - Two for strings that do not exist.
+
+    Verifies that:
+    - "orange" and "melon" are correctly found.
+    - "kiwi" and "grapefruit" are correctly reported as not found.
+    """
+    # Set the port for the server.
     port = 12352
+
+    # Create a temporary data file with initial content.
     data_file = tmp_path / "reread_data.txt"
     data_file.write_text("orange\npeach\nmelon\n")
 
+    # Start the server in a background thread with reread_on_query enabled.
     t = threading.Thread(target=server.start_server, kwargs={
         'linuxpath': str(data_file),
-        'reread_on_query': True,
+        'reread_on_query': True,  # Ensure server reads the file fresh for each query.
         'use_ssl': False,
         'certfile': '', 'keyfile': '',
         'psk': None, 'port': port
     }, daemon=True)
     t.start()
+
+    # Give the server a moment to start up before sending queries.
     time.sleep(0.5)
 
+    # Define queries to send to the server.
     queries = ["orange", "melon", "kiwi", "grapefruit"]
+    results = [None] * len(queries)
+    threads = []
+
+    # Launch one thread per query to simulate multiple concurrent clients.
+    for i, q in enumerate(queries):
+        th = threading.Thread(target=send_query, args=(q, port, results, i))
+        threads.append(th)
+        th.start()
+
+    # Wait for all client threads to complete.
+    for th in threads:
+        th.join()
+
+    # Assertions: check that correct responses were received.
+    assert "EXISTS" in results[0]  # "orange" is in the file.
+    assert "EXISTS" in results[1]  # "melon" is in the file.
+    assert "NOT FOUND" in results[2]  # "kiwi" is not in the file
+    assert "NOT FOUND" in results[3]  # "grapefruit" is not in the file.
+
+
+def test_concurrent_clients_no_reread_on_query(tmp_path):
+    """
+    Tests that the server uses the initial cached file content
+    when 'reread_on_query' is set to False.
+
+    The server is expected to not reflect any file updates after startup.
+    """
+    port = 12354
+    data_file = tmp_path / "no_reread_data.txt"
+    data_file.write_text("apple\nbanana\ncherry\n")
+
+    t = threading.Thread(target=server.start_server, kwargs={
+        'linuxpath': str(data_file),
+        'reread_on_query': False,  # File is read once at startup
+        'use_ssl': False,
+        'certfile': '', 'keyfile': '',
+        'psk': None,
+        'port': port
+    }, daemon=True)
+    t.start()
+    time.sleep(0.5)
+
+    # Update the file, but server should ignore this.
+    data_file.write_text("banana\ndate\nelderberry\n")
+
+    queries = ["apple", "banana", "date"]
     results = [None] * len(queries)
     threads = []
 
     for i, q in enumerate(queries):
         th = threading.Thread(target=send_query, args=(q, port, results, i))
+        threads.append(th)
+        th.start()
+
+    for th in threads:
+        th.join()
+
+    assert "EXISTS" in results[0]      # "apple" was in the original file
+    assert "EXISTS" in results[1]      # "banana" was in both versions
+    assert "NOT FOUND" in results[2]   # "date" was added after startup, should be ignored
+
+
+def test_concurrent_clients_with_ssl(tmp_path):
+    """
+    Tests that the server can handle multiple concurrent client queries over SSL.
+
+    Ensures the SSL-enabled server can read file content properly per query
+    and return accurate results with `reread_on_query=True`.
+    """
+    port = 12355
+    data_file = tmp_path / "ssl_data.txt"
+    data_file.write_text("pineapple\ngrape\nfig\n")
+
+    # Create temporary cert and key for SSL
+    certfile = tmp_path / "server.pem"
+    keyfile = tmp_path / "server.key"
+    generate_self_signed_cert(str(certfile), str(keyfile))
+
+    t = threading.Thread(target=server.start_server, kwargs={
+        'linuxpath': str(data_file),
+        'reread_on_query': True,
+        'use_ssl': True,
+        'certfile': str(certfile),
+        'keyfile': str(keyfile),
+        'psk': None,
+        'port': port
+    }, daemon=True)
+    t.start()
+    time.sleep(0.5)
+
+    queries = ["pineapple", "fig", "banana"]
+    results = [None] * len(queries)
+    threads = []
+
+    for i, q in enumerate(queries):
+        th = threading.Thread(target=send_query_ssl, args=(q, port, results, i, str(certfile)))
         threads.append(th)
         th.start()
 
@@ -770,28 +1054,53 @@ def test_concurrent_clients_reread_on_query(tmp_path):
     assert "EXISTS" in results[0]
     assert "EXISTS" in results[1]
     assert "NOT FOUND" in results[2]
-    assert "NOT FOUND" in results[3]
 
 
 def test_concurrent_query_with_live_file_update(tmp_path):
+    """
+    Test server behavior under concurrent queries while the data file is being updated.
+
+    This test verifies that:
+    - The server re-reads the data file on every query when 'reread_on_query' is True.
+    - Multiple clients can query the server concurrently.
+    - The server correctly picks up changes to the data file in real time during execution.
+
+    Procedure:
+    - A temporary file is created with initial content ('foo', 'bar', 'baz').
+    - The server is launched in a separate thread with reread_on_query=True.
+    - A writer thread updates the file contents after a short delay.
+    - Client threads concurrently send queries:
+        - 'foo' (present in the initial file only),
+        - 'bar' (present in both the initial and updated files),
+        - 'updated' (present only in the updated file).
+    - The test asserts that 'bar' was successfully found, validating live reloading behavior.
+
+    Notes:
+    - Due to concurrency and timing, 'foo' and 'updated' may or may not be found, so no assertion is made for them.
+    """
+    # Define port and create a temporary data file with initial content.
     port = 12353
     data_file = tmp_path / "livefile.txt"
     data_file.write_text("foo\nbar\nbaz\n")
 
+    # Start the server in a separate thread with reread_on_query=True to re-read the file on every query.
     t = threading.Thread(target=server.start_server, kwargs={
         'linuxpath': str(data_file),
-        'reread_on_query': True,
+        'reread_on_query': True,  # Enable dynamic file reading per query.
         'use_ssl': False,
         'certfile': '', 'keyfile': '',
         'psk': None, 'port': port
     }, daemon=True)
     t.start()
-    time.sleep(0.5)
+    time.sleep(0.5)  # Give the server time to start.
 
+    # Define a function that modifies the file content after a short delay.
     def modify_file():
-        time.sleep(0.2)
-        data_file.write_text("bar\nupdated\nbaz\n")
+        time.sleep(0.2)  # Delay to allow some queries to hit the old content.
+        data_file.write_text("bar\nupdated\nbaz\n")  # Overwrite file to simulate live update.
 
+
+    # Define the queries to send and initialize a results list.
     queries = ["foo", "bar", "updated"]
     results = [None] * len(queries)
     threads = []
@@ -800,25 +1109,47 @@ def test_concurrent_query_with_live_file_update(tmp_path):
     writer_thread = threading.Thread(target=modify_file)
     writer_thread.start()
 
+    # Start a separate thread for each query to simulate concurrent client requests.
     for i, q in enumerate(queries):
         th = threading.Thread(target=send_query, args=(q, port, results, i))
         threads.append(th)
         th.start()
 
+    # Wait for all query threads to finish.
     for th in threads:
         th.join()
+    # Wait for the writer thread to complete the file update.    
     writer_thread.join()
 
     # Depending on timing, 'foo' may or may not be found.
     assert "EXISTS" in results[1]
+    # Assert that "updated" may be found depending on timing.
     assert "EXISTS" in results[2] or "NOT FOUND" in results[2]
 
 
 def test_concurrent_clients_preloaded(tmp_path):
+    """
+    Test server's ability to handle concurrent client queries using a preloaded dataset.
+
+    This test ensures that:
+    - The server correctly loads data into memory before starting.
+    - Multiple clients can connect and send queries simultaneously.
+    - The server responds accurately for both found and not-found queries when 'reread_on_query' is False.
+
+    Procedure:
+    - Create a temporary data file with strings: 'apple', 'banana', 'cherry'.
+    - Preload the dataset into server memory (simulate startup behavior).
+    - Start the server in a background thread (with preloaded dataset).
+    - Spawn client threads to concurrently query the server with:
+        - 3 matching strings: 'apple', 'banana', 'cherry'.
+        - 1 non-matching string: 'grape'.
+    - Verify that the server responds appropriately for each case.
+    """
     port = 12351
     data_file = tmp_path / "data.txt"
     data_file.write_text("apple\nbanana\ncherry\n")
 
+    # Preload the data set into the server before it starts.
     server.preloaded_set = server.load_file_into_set(str(data_file))
 
     # Start server thread.
@@ -832,34 +1163,25 @@ def test_concurrent_clients_preloaded(tmp_path):
     t.start()
     time.sleep(1.0)  # Give time for server to bind.
 
+    # Define queries and prepare storage for results.
     queries = ["apple", "banana", "cherry", "grape"]
     results = [None] * len(queries)
     threads = []
 
-    def send_query_with_retries(query, port, results, idx):
-        for _ in range(3):
-            try:
-                with socket.create_connection(('localhost', port), timeout=3) as s:
-                    s.sendall(query.encode())
-                    results[idx] = s.recv(1024).decode()
-                    return
-
-            except Exception as e:
-                results[idx] = f"ERROR: {e}"
-                time.sleep(0.2)
-
+    # Spawn a thread for each query to simulate concurrent clients.
     for i, q in enumerate(queries):
         th = threading.Thread(target=send_query_with_retries, args=(q, port, results, i))
         threads.append(th)
         th.start()
 
+    # Wait for all client threads to complete.
     for th in threads:
         th.join()
 
     print("Client results:", results)
 
+    # Validate that known strings exist, and unknown one is correctly reported as not found.
     assert results[0] and results[0].startswith("STRING EXISTS")
     assert results[1] and results[1].startswith("STRING EXISTS")
     assert results[2] and results[2].startswith("STRING EXISTS")
     assert results[3] and results[3].startswith("STRING NOT FOUND")
-
