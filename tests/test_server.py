@@ -290,21 +290,21 @@ def test_start_server_with_ssl(mock_load_file_into_set, mock_socket_class, mock_
 
 
 def test_load_file_into_set_empty_file(tmp_path):
-    """Test loading an empty file returns an empty set."""
+    """Test that loading an empty file returns an empty set."""
     file_path = tmp_path / "empty.txt"
     file_path.write_text("")
     assert load_file_into_set(str(file_path)) == set()
 
 
 def test_load_file_into_set_blank_lines(tmp_path):
-    """Test loading a file with only blank lines returns empty set."""
+    """Test that loading a file with only blank lines returns empty set."""
     file_path = tmp_path / "blank.txt"
     file_path.write_text("\n\n    \n\n")
     assert load_file_into_set(str(file_path)) == set()
 
 
 def test_load_file_into_set_duplicates(tmp_path):
-    """Test file with duplicate lines results in unique entries."""
+    """Test that a file with duplicate lines results in unique entries."""
     file_path = tmp_path / "duplicates.txt"
     file_path.write_text("apple\nbanana\napple\nbanana\norange\n")
     result = load_file_into_set(str(file_path))
@@ -312,7 +312,7 @@ def test_load_file_into_set_duplicates(tmp_path):
 
 
 def test_load_file_into_set_strip_whitespace(tmp_path):
-    """Test lines are stripped of leading/trailing whitespace."""
+    """Test that lines are stripped of leading/trailing whitespace."""
     file_path = tmp_path / "whitespace.txt"
     file_path.write_text("  apple   \n\tbanana\t\norange \n")
     result = load_file_into_set(str(file_path))
@@ -320,7 +320,7 @@ def test_load_file_into_set_strip_whitespace(tmp_path):
 
 
 def test_load_file_into_set_unicode_decode_error(tmp_path):
-    """Test UnicodeDecodeError is raised for invalid UTF-8 file."""
+    """Test that UnicodeDecodeError is raised for invalid UTF-8 file."""
     file_path = tmp_path / "invalid_utf8.txt"
     file_path.write_bytes(b'\xff\xfe\xfa') # Invalid UTF-8 sequence.
     with pytest.raises(UnicodeDecodeError):
@@ -605,6 +605,23 @@ def test_mixed_client_behaviors(mock_load_file_into_set, temp_file, capfd):
 # Test `handle_client` with null bytes in query.
 @patch('server.load_file_into_set')
 def test_handle_client_null_bytes_in_query(mock_load_file_into_set, temp_file):
+    """
+    Unit test for the handle_client function to ensure that it correctly handles null bytes in the input query.
+
+    This test simulates a client sending a query string containing null bytes (e.g., 'te\x00st\n') and verifies that:
+    - Null bytes are properly removed from the query before checking against the loaded set of strings.
+    - The string 'test' exists in the mocked data set returned by load_file_into_set.
+    - The response sent back to the client is 'STRING EXISTS\n', indicating a successful match.
+    - The client socket is properly closed after processing.
+
+    Mocks:
+    - load_file_into_set: returns a set containing the string 'test'.
+    - client socket: mocks recv, sendall, and close methods.
+
+    Arguments:
+    - mock_load_file_into_set: patched version of the load_file_into_set function.
+    - temp_file: temporary file path used as a placeholder for file loading.
+    """
     mock_load_file_into_set.return_value = {'test'}
     mock_socket = MagicMock()
     mock_socket.recv.return_value = b'te\x00st\n'
@@ -617,7 +634,9 @@ def test_handle_client_null_bytes_in_query(mock_load_file_into_set, temp_file):
         linuxpath=temp_file,
         reread_on_query=True
     )
+    # Assert that the server correctly identifies the query string as existing in the dataset
     mock_socket.sendall.assert_called_with(b'STRING EXISTS\n') # Null bytes should be removed.
+    # Assert that the server closes the client connection
     mock_socket.close.assert_called_once()
 
 
@@ -629,6 +648,29 @@ def test_start_server_ssl_cert_load_error(
     mock_ssl_context_class, mock_load_file_into_set, mock_socket_class,
     temp_config_file_path, capfd, tmp_path
 ):
+    """
+    Test that the server gracefully handles a missing SSL certificate file.
+
+    This test mocks the server's configuration and environment to simulate a situation
+    where SSL is enabled but the provided certificate file does not exist. It verifies that:
+    - An appropriate error message is printed to stdout.
+    - The server socket is properly closed after the failure.
+
+    Mocks:
+        - `server.ssl.SSLContext`: To raise `FileNotFoundError` when attempting to load the cert chain.
+        - `server.load_file_into_set`: Mocked to bypass file loading logic.
+        - `server.socket.socket`: To monitor socket behavior (e.g., closing).
+        - `server.load_dotenv`: Mocked to prevent environment loading side effects.
+        - `server.config`: Replaced with a mock config object that enables SSL and sets invalid certfile path.
+
+    Args:
+        mock_ssl_context_class (MagicMock): Mock for `ssl.SSLContext`.
+        mock_load_file_into_set (MagicMock): Mock for file loading utility.
+        mock_socket_class (MagicMock): Mock for socket class.
+        temp_config_file_path (Path): Temporary config file path (unused in this test).
+        capfd (pytest fixture): Captures stdout and stderr.
+        tmp_path (Path): Temporary directory path provided by pytest for file operations.
+    """
     # Setup mock config for SSL.
     mock_config = MagicMock()
 
@@ -799,6 +841,15 @@ def test_start_server_concurrent_clients(
 
 @patch('server.load_file_into_set')
 def test_handle_client_socket_error(mock_load_file_into_set, temp_file, capfd):
+    """
+    Test that `handle_client` handles a generic socket error gracefully.
+
+    This test simulates a scenario where an exception occurs while receiving data
+    from the client socket. It verifies that:
+    - An appropriate error message is sent back to the client.
+    - The socket is properly closed after the error.
+    - The error is logged to stdout.
+    """
     mock_load_file_into_set.return_value = {'hello', 'world'}
     mock_socket = MagicMock()
     mock_socket.recv.side_effect = socket.error("Generic socket error")
@@ -818,6 +869,15 @@ def test_handle_client_socket_error(mock_load_file_into_set, temp_file, capfd):
 
 @patch('server.load_file_into_set')
 def test_handle_client_unicode_decode_error(mock_load_file_into_set, temp_file, capfd):
+    """
+    Test that `handle_client` handles UnicodeDecodeError when receiving invalid UTF-8 data.
+
+    This test simulates a scenario where the client sends improperly encoded byte data
+    that cannot be decoded using UTF-8. It verifies that:
+    - An appropriate encoding error message is sent back to the client.
+    - The client socket is properly closed after the error.
+    - The error is logged to stdout.
+    """
     mock_load_file_into_set.return_value = {'hello', 'world'}
     mock_socket = MagicMock()
     mock_socket.recv.return_value = b'\xff\xfe\xfa' # Invalid UTF-8.
@@ -838,30 +898,68 @@ def test_handle_client_unicode_decode_error(mock_load_file_into_set, temp_file, 
 
 @patch('server.load_file_into_set')
 def test_handle_client_unexpected_error(mock_load_file_into_set, temp_file, capfd):
+    """
+    Test that `handle_client` gracefully handles unexpected internal exceptions.
+
+    This test simulates a scenario where an unanticipated exception (e.g., `ValueError`)
+    is raised during the handling of a client connection. It verifies that:
+    - The server sends a generic internal error response to the client.
+    - The client socket is properly closed.
+    - A clear error message is logged to stdout for debugging purposes.
+    """
+    # Mock the file-loading function to return a dummy word set.
     mock_load_file_into_set.return_value = {'hello', 'world'}
+
+    # Create a mock socket object to simulate client behavior.
     mock_socket = MagicMock()
-    mock_socket.recv.side_effect = ValueError("Some unexpected internal error") # Simulate an unexpected error.
+
+    # Simulate an unexpected internal error (e.g., ValueError) when trying to receive data.
+    mock_socket.recv.side_effect = ValueError("Some unexpected internal error")
+
+    # Mock the sendall method to track what gets sent to the client.
     mock_socket.sendall = MagicMock()
 
+    # Call the actual client handler function with the mock socket and a dummy address.
     handle_client(
         client_socket=mock_socket,
         address=('127.0.0.1', 5000),
         linuxpath=temp_file,
         reread_on_query=True
     )
+
+    # Assert that the server sends a generic internal error message back to the client.
     mock_socket.sendall.assert_called_with(b"ERROR: Server encountered an unexpected error\n")
+    
+    # Assert that the socket is closed after the error occurs.
     mock_socket.close.assert_called_once()
+
+    # Capture and assert that the expected error log message was printed.
     captured = capfd.readouterr()
     assert "ERROR: Unexpected error handling client ('127.0.0.1', 5000): Some unexpected internal error" in captured.out
 
 
 @patch('server.load_file_into_set')
 def test_handle_client_query_too_long(mock_load_file_into_set, temp_file):
+    """
+    Test that `handle_client` correctly rejects an excessively long query.
+
+    This test simulates a client sending a query string that exceeds the
+    allowed maximum length (200 characters). The server is expected to:
+
+    - Respond with an appropriate error message: "ERROR: Query too long"
+    - Close the connection without attempting to process the query
+    """
+    # Create a mock socket to simulate client behavior.
     mock_socket = MagicMock()
-    mock_socket.recv.return_value = b'A' * 201 + b'\n' # Query over 200 chars.
+
+    # Simulate receiving a query string that is 201 characters long.
+    mock_socket.recv.return_value = b'A' * 201 + b'\n'
+
+    # Mock sendall and close methods to track usage.
     mock_socket.sendall = MagicMock()
     mock_socket.close = MagicMock() 
 
+    # Call the handle_client function with mocked client socket and test inputs.
     handle_client(
         client_socket=mock_socket,
         address=('127.0.0.1', 5000),
@@ -869,8 +967,12 @@ def test_handle_client_query_too_long(mock_load_file_into_set, temp_file):
         reread_on_query=True
     )
 
+    # Check that the error message for too long a query was sent to the client.
     mock_socket.sendall.assert_called_with(b"ERROR: Query too long\n")
+
+    # Check that the client connection was closed.
     mock_socket.close.assert_called_once()
+
     # Ensure no further processing happens.
     mock_load_file_into_set.assert_not_called()
 
@@ -883,7 +985,21 @@ def test_start_server_ssl_context_error(
     mock_ssl_context_class, mock_load_file_into_set, mock_socket_class,
     temp_config_file_path, capfd, tmp_path
 ):
+    """
+    Test that `start_server` handles an SSLContext creation failure gracefully.
+
+    This test simulates a situation where the SSL context fails to initialize (e.g., due to
+    misconfiguration or invalid environment) by raising an `ssl.SSLError` during the
+    instantiation of `ssl.SSLContext`.
+
+    It verifies that:
+    - The SSL error is triggered when attempting to start the server with SSL enabled.
+    - The error is handled without causing a crash or unhandled exception.
+    """
+    # Create a mock config object to simulate expected config behavior.
     mock_config = MagicMock()
+
+    # Simulate config.get() returning various SSL and server settings.
     mock_config.get.side_effect = lambda section, option, fallback=None: {
         'linuxpath': str(tmp_path / 'dummy_data.txt'),
         'REREAD_ON_QUERY': 'False',
@@ -893,14 +1009,21 @@ def test_start_server_ssl_context_error(
         'PSK': 'dummy_psk',
         'PORT': '12345'
     }.get(option, fallback)
+
+    # Simulate config.getboolean() returning True only for USE_SSL.
     mock_config.getboolean.side_effect = lambda section, option, fallback: True if option == 'USE_SSL' else False
+
+    # Simulate config.getint() returning the server port number.
     mock_config.getint.return_value = 12345
 
     # Simulate SSLContext initialization failure.
     mock_ssl_context_class.side_effect = ssl.SSLError("Failed to create SSL context")
 
+    # Patch the server's config with the mock config and prevent actual threads from starting.
     with patch('server.config', mock_config): # Patch the global config.
         with patch('server.threading.Thread'):
+            # Attempt to start the server with mocked SSL configuration.
+            # This should trigger the SSLError from the mocked SSLContext constructor.
             start_server(
                 linuxpath=str(tmp_path / 'dummy_data.txt'),
                 reread_on_query=False,
