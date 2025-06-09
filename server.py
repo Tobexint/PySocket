@@ -21,7 +21,7 @@ CONFIG_FILE = os.getenv("CONFIG")
 if CONFIG_FILE is None:
     print("ERROR: CONFIG environment variable not set. "
           "Please specify the path to the config file.")
-    sys.exit(1)  # Exit the script if the config file path is not provided
+    sys.exit(1)  # Exit the script if the config file path is not provided.
 
 # Added check for type safety.
 if not isinstance(CONFIG_FILE, str):
@@ -162,6 +162,9 @@ def load_file_into_set(filepath: str) -> Set[str]:
 def search_string_in_set(lines_set: Set[str], search_string: str) -> bool:
     """
     Searches for the given string in the preloaded set.
+
+    This function performs an exact, full-line match. The `in` operator on a set
+    checks for whole-element membership, not partial or substring matches.
     """
     return search_string.strip() in lines_set
 
@@ -247,7 +250,7 @@ def handle_client(client_socket: socket.socket, address: Tuple[str, int],
             response = 'STRING EXISTS\n'
 
         else:
-            response = 'STRING NOT FOUND'
+            response = 'STRING NOT FOUND\n'
 
         # Send response to the client.
         client_socket.sendall(response.encode('utf-8'))
@@ -278,16 +281,16 @@ def handle_client(client_socket: socket.socket, address: Tuple[str, int],
         client_socket.sendall(b"ERROR: Server encountered "
                               b"an unexpected error\n")
 
-
+    finally:
         # Log the query, string, and execution times.
         print(
             f"Query from {address[0]}:{address[1]} - "
             f"String: '{request}' - "
             f"Found: {string_exists} - "
             f"Execution Time: {execution_time:.6f} seconds."
-            )
+        )
 
-    finally:
+        # Close the socket.
         client_socket.close()
 
 
