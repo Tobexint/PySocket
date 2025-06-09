@@ -1308,3 +1308,10 @@ def test_concurrent_clients_preloaded(tmp_path):
     assert results[1] and results[1].startswith("STRING EXISTS")
     assert results[2] and results[2].startswith("STRING EXISTS")
     assert results[3] and results[3].startswith("STRING NOT FOUND")
+
+
+def test_load_file_into_set_directory_error(tmp_path):
+    # tmp_path is a directory
+    with pytest.raises(IsADirectoryError):
+        load_file_into_set(str(tmp_path))
+
