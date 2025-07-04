@@ -53,7 +53,9 @@ pip install -r requirements.txt
 ```
 
 ## Load the env file
+```bash
 echo CONFIG=config.ini > .env
+```
 
 ## Unit Testing
 In the root folder, run:
@@ -61,8 +63,10 @@ In the root folder, run:
 - 'pytest tests/test_client.py' to test the client.
 
 Alternatively in the tests folder, run:
+```bash
 - python -m pytest test_server.py
 - python -m pytest test_client.py
+```
 
 
 ## Setting Up SSL for Secure Communication
