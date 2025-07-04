@@ -48,9 +48,9 @@ Python · socket · threading · ssl · configparser · dotenv · pytest · cove
 
 ## Installation
 To install dependencies, run:
-'''bash
+```bash
 pip install -r requirements.txt
-'''
+```
 
 ## Load the env file
 echo CONFIG=config.ini > .env
