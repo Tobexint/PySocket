@@ -3,11 +3,17 @@
 A production-grade Python TCP server built with:
 
 - 🧵 Multithreading for high concurrency.
+
 - 🔐 SSL/TLS encryption with custom certs.
+
 - ⚙️ Configurable runtime via `.env` and `.ini` files.
+
 - 📄 In-memory search engine using hash sets.
+
 - 🔄 Reread-on-query support for real-time updates.
+
 - 🧪 Full test suite with `pytest` and 100% test coverage.
+
 - 🐧 Linux daemon mode for background execution.
 
 ### 🔧 Tech Stack
