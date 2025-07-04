@@ -47,7 +47,10 @@ Python · socket · threading · ssl · configparser · dotenv · pytest · cove
 - The tests folder contains the pytest files.
 
 ## Installation
-To install dependencies, run: pip install -r requirements.txt
+To install dependencies, run:
+'''bash
+pip install -r requirements.txt
+'''
 
 ## Load the env file
 echo CONFIG=config.ini > .env
