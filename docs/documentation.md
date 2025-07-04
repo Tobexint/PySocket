@@ -1,5 +1,26 @@
 # Documentation
 
+---
+
+## 🛠️ How It Works
+
+- Preloads a text file into memory (or reads it on every query).
+- Clients connect over TCP and send a search string.
+- Server responds with:
+  - `"STRING EXISTS"` if found
+  - `"STRING NOT FOUND"` otherwise
+- Supports SSL wrapping using cert/key files.
+
+---
+
+## ⚙️ Configuration
+
+### .env
+
+```ini
+CONFIG=config.ini
+```
+
 ## File Structure
 - The .env file stores the environment variable for the config.ini file.
 
